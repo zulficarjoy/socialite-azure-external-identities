@@ -315,12 +315,19 @@ class Provider extends AbstractProvider
 
             $jwks = $this->configurationResolver()->resolveJwks($configuration['jwks_uri']);
 
+            // Use the issuer published in the OIDC discovery document as the
+            // expected value — this is the authority-canonical issuer string.
+            $expectedIssuer = isset($configuration['issuer']) && is_string($configuration['issuer'])
+                ? $configuration['issuer']
+                : null;
+
             return $this->idTokenVerifier()->verify(
                 idToken: $idToken,
                 clientId: $this->clientId,
                 expectedNonce: $this->getSessionNonce(),
                 jwks: $jwks,
                 validateNonce: $this->usesNonce(),
+                expectedIssuer: $expectedIssuer,
             );
         }
 

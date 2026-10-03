@@ -21,6 +21,7 @@ class IdTokenVerifier
         ?string $expectedNonce,
         array $jwks,
         bool $validateNonce = true,
+        ?string $expectedIssuer = null,
     ): array {
         if ($expectedNonce === null && $validateNonce) {
             throw new InvalidNonceException('No nonce was found in the current session.');
@@ -42,6 +43,10 @@ class IdTokenVerifier
         $claims = json_decode(json_encode($payload, JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertAudience($claims, $clientId);
+
+        if ($expectedIssuer !== null) {
+            $this->assertIssuer($claims, $expectedIssuer);
+        }
 
         if ($validateNonce) {
             $this->assertNonce($claims, $expectedNonce);
@@ -74,6 +79,20 @@ class IdTokenVerifier
         }
 
         return $claims;
+    }
+
+    /**
+     * @param  array<string, mixed>  $claims
+     */
+    private function assertIssuer(array $claims, string $expectedIssuer): void
+    {
+        $issuer = $claims['iss'] ?? null;
+
+        if ($issuer !== $expectedIssuer) {
+            throw new TokenValidationException(
+                'The ID token issuer does not match the expected authority. '."Got: '{$issuer}', expected: '{$expectedIssuer}'."
+            );
+        }
     }
 
     /**
